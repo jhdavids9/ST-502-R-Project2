@@ -50,7 +50,6 @@ boxplot(MPG ~ Country, main = "Boxplot Comparison of MPG by country",ylab="MPG")
 
 In this section we calculate the 2 sample t-test on the data at the $\alpha = 0.05$ signicance level. 
 
-
 ### 2-Sample t-test equal variance
 ```{r}
 alpha <- 0.05
@@ -92,3 +91,113 @@ curve(dnorm(x, US.MLE.mean,US.MLE.SD), add=TRUE,col='red')
 ```
 
 We see the US MPG data is right skewed.
+
+# Part 2
+
+
+Set up the parameters for the simulation study.
+```{r}
+
+n1Vec <- c( 10, 25, 60)
+n2Vec <- c(10, 25, 60)
+
+mu1 <- 0
+#Delta = mu1-mu2
+deltaVec <- c(-5, -1, 0, 1, 5)
+
+var1Vec <- c(1, 3, 9) 
+var2 <- 1
+
+alphaVec <- c(0.025, 0.05, 0.1, 0.15,0.2)
+
+parameter.grid <- expand.grid(n1Vec,n2Vec,deltaVec,var1Vec,alphaVec)
+
+colnames(parameter.grid) <- c("n1","n2","delta","var1","alpha")
+
+pander(parameter.grid[1:10,],caption="First Few elements of parmaters space")
+
+```
+
+The first few elements of the parameter space are displayed in the table above.  There are `r nrow(parameter.grid)` elements of the parameter space.
+
+##Simulate from the null distribution and check the empirical acceptance probability. 
+```{r}
+
+#The number of hypothesis test we run for each parameter configuration.
+B <- 30
+
+results.alpha <- parameter.grid
+
+results.alpha$pooled.proportion.accepted <-numeric(nrow(results.alpha))
+results.alpha$unequal.proportion.accepted <-numeric(nrow(results.alpha))
+
+for(i in 1:nrow(parameter.grid))
+{
+  parameters <- parameter.grid[i,]
+  
+  n1 <- parameters$n1
+  n2 <-parameters$n2
+  delta<-parameters$delta
+  var1<-parameters$var1
+  alpha<-parameters$alpha
+  
+  pooled.var.simulated.accepted <- rep(0,B)
+  
+  unequal.var.simulated.accepted <- rep(0,B)
+  
+  for( b in 1:B)
+  {
+    #configuration.key <- paste("n1:",n1,"n2:",n2,"delta:",delta,"var1:",var1,sep = "")
+
+    sample1 <- data.frame(MPG =rnorm(n1,mean = mu1,sd = sqrt(var1)), Country = as.numeric(rep(0,times = n1)))
+    
+    mu2 <- mu1 + delta
+    
+    sample2 <- data.frame(MPG=rnorm(n2,mean=mu2,sd=sqrt(var2)), Country = as.numeric(rep(1,times = n2)))
+    
+    #Form a data frame - for consistency we 
+    DF= rbind(sample1, sample2)
+
+    pooled.var <- t.test(x = DF[DF$Country==0,]$MPG,y = DF[DF$Country==1,]$MPG,alternative = "two.sided",var.equal = TRUE, conf.level = alpha)
+    
+    if ( pooled.var$p.value < alpha )
+      pooled.var.simulated.accepted[b]<-FALSE
+    
+    if ( pooled.var$p.value >= alpha )
+      pooled.var.simulated.accepted[b]<-TRUE
+  
+    
+    unequal.var <- t.test(x = DF[DF$Country==0,]$MPG,y = DF[DF$Country==1,]$MPG,alternative = "two.sided",var.equal = FALSE,conf.level = alpha)
+    
+    
+    if ( unequal.var$p.value < alpha )
+      unequal.var.simulated.accepted[b]<-FALSE
+    
+    if ( unequal.var$p.value >= alpha )
+      unequal.var.simulated.accepted[b]<-TRUE
+  
+  }
+  
+  proportion.accpeted.pooled <- sum(pooled.var.simulated.accepted)/length(pooled.var.simulated.accepted)
+  
+  proportion.accpeted.unequal <- sum(unequal.var.simulated.accepted)/length(unequal.var.simulated.accepted)
+  
+  results.alpha[i,]$pooled.proportion.accepted <- proportion.accpeted.pooled
+  
+  results.alpha[i,]$unequal.proportion.accepted <- proportion.accpeted.unequal
+}
+
+save(results.alpha,file = "results.alpha.Rdata")
+
+```
+
+
+
+
+
+
+
+
+
+
+
