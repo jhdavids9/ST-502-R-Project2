@@ -124,12 +124,17 @@ The first few elements of the parameter space are displayed in the table above. 
 ```{r}
 
 #The number of hypothesis test we run for each parameter configuration.
-B <- 30
+B <- 100
 
 results.alpha <- parameter.grid
 
 results.alpha$pooled.proportion.accepted <-numeric(nrow(results.alpha))
 results.alpha$unequal.proportion.accepted <-numeric(nrow(results.alpha))
+
+
+results.alpha$pooled.proportion.rejected <-numeric(nrow(results.alpha))
+results.alpha$unequal.proportion.rejected <-numeric(nrow(results.alpha))
+
 
 for(i in 1:nrow(parameter.grid))
 {
@@ -185,9 +190,55 @@ for(i in 1:nrow(parameter.grid))
   results.alpha[i,]$pooled.proportion.accepted <- proportion.accpeted.pooled
   
   results.alpha[i,]$unequal.proportion.accepted <- proportion.accpeted.unequal
+  
+  
+  results.alpha[i,]$pooled.proportion.rejected<- 1-proportion.accpeted.pooled
+  
+  results.alpha[i,]$unequal.proportion.rejected <- 1-proportion.accpeted.unequal
 }
 
 save(results.alpha,file = "results.alpha.Rdata")
+
+```
+
+
+
+#Plot the power for the pooled t tests.
+```{r,fig.width=6,fig.height=6}
+library(ggplot2)
+library(GGally)
+
+plotList <- list()
+plotColors <- rainbow(length(var1Vec))
+for (i in 1:3) 
+{
+  for(j in 1:3)
+  {
+    index = (i-1)*3+j
+    
+      n1=n1Vec[i]
+      n2=n2Vec[j]
+      #Get the data for this plot 
+      indexVec <- results.alpha$n1==n1 &results.alpha$n2==n2
+      plot.data <- results.alpha[indexVec,]
+
+    plotList[[index]] <-ggplot() + 
+      geom_line(data = plot.data[plot.data$var1==var1Vec[1],], aes(x = delta, y =pooled.proportion.rejected, color = "red")) +
+        geom_line(data = plot.data[plot.data$var1==var1Vec[2],], aes(x = delta, y =pooled.proportion.rejected, color = "green")) 
+        geom_line(data = plot.data[plot.data$var1==var1Vec[3],], aes(x = delta, y =pooled.proportion.rejected, color = "blue")) 
+  }
+}
+
+# bare minimum of plotList, nrow, and ncolVec
+pm <- ggmatrix(
+  plotList, nrow=3, ncol=3,
+  xAxisLabels = n1Vec,
+  yAxisLabels = n2Vec,
+  title = "Power Curves",
+  byrow = FALSE,
+  showStrips = TRUE)
+pm <- pm + theme_bw()
+pm
 
 ```
 
