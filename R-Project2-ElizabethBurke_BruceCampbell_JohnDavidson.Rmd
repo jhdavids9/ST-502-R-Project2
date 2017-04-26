@@ -103,7 +103,7 @@ n2Vec <- c(10, 25, 60)
 
 mu1 <- 0
 #Delta = mu1-mu2
-deltaVec <- c(-5, -1, 0, 1, 5)
+deltaVec <- c(-5,-3, -1, -.5,0,.5, 1,3, 5)
 
 var1Vec <- c(1, 3, 9) 
 var2 <- 1
@@ -124,7 +124,7 @@ The first few elements of the parameter space are displayed in the table above. 
 ```{r}
 
 #The number of hypothesis test we run for each parameter configuration.
-B <- 100
+B <- 600
 
 results.alpha <- parameter.grid
 
@@ -203,7 +203,7 @@ save(results.alpha,file = "results.alpha.Rdata")
 
 
 
-#Plot the power for the pooled t tests.
+##Plot the power for the pooled t tests.
 ```{r,fig.width=6,fig.height=6}
 library(ggplot2)
 library(GGally)
@@ -224,7 +224,7 @@ for (i in 1:3)
 
     plotList[[index]] <-ggplot() + 
       geom_line(data = plot.data[plot.data$var1==var1Vec[1],], aes(x = delta, y =pooled.proportion.rejected, color = "red")) +
-        geom_line(data = plot.data[plot.data$var1==var1Vec[2],], aes(x = delta, y =pooled.proportion.rejected, color = "green")) 
+        geom_line(data = plot.data[plot.data$var1==var1Vec[2],], aes(x = delta, y =pooled.proportion.rejected, color = "green")) +
         geom_line(data = plot.data[plot.data$var1==var1Vec[3],], aes(x = delta, y =pooled.proportion.rejected, color = "blue")) 
   }
 }
@@ -234,7 +234,7 @@ pm <- ggmatrix(
   plotList, nrow=3, ncol=3,
   xAxisLabels = n1Vec,
   yAxisLabels = n2Vec,
-  title = "Power Curves",
+  title = "Power Curves For Pooled t-test",
   byrow = FALSE,
   showStrips = TRUE)
 pm <- pm + theme_bw()
@@ -242,6 +242,47 @@ pm
 
 ```
 
+
+
+
+##Plot the power for the unpooled t tests.
+```{r,fig.width=6,fig.height=6}
+library(ggplot2)
+library(GGally)
+
+plotList <- list()
+plotColors <- rainbow(length(var1Vec))
+for (i in 1:3) 
+{
+  for(j in 1:3)
+  {
+    index = (i-1)*3+j
+    
+      n1=n1Vec[i]
+      n2=n2Vec[j]
+      #Get the data for this plot 
+      indexVec <- results.alpha$n1==n1 &results.alpha$n2==n2
+      plot.data <- results.alpha[indexVec,]
+
+    plotList[[index]] <-ggplot() + 
+      geom_line(data = plot.data[plot.data$var1==var1Vec[1],], aes(x = delta, y =unequal.proportion.rejected, color = "red")) +
+        geom_line(data = plot.data[plot.data$var1==var1Vec[2],], aes(x = delta, y =unequal.proportion.rejected, color = "green")) +
+        geom_line(data = plot.data[plot.data$var1==var1Vec[3],], aes(x = delta, y =unequal.proportion.rejected, color = "blue")) 
+  }
+}
+
+# bare minimum of plotList, nrow, and ncolVec
+pm <- ggmatrix(
+  plotList, nrow=3, ncol=3,
+  xAxisLabels = n1Vec,
+  yAxisLabels = n2Vec,
+  title = "Power Curves For Unpooled t-test",
+  byrow = FALSE,
+  showStrips = TRUE)
+pm <- pm + theme_bw()
+pm
+
+```
 
 
 
